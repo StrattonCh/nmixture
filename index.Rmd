@@ -1,0 +1,454 @@
+---
+title: "N-mixture models in NIMBLE"
+description: |
+  Simulations investigating use of N-mixture models for NABat data
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    toc_depth: 3
+bibliography: bibliography.bib
+csl: biometrics_notes.csl
+---
+
+```{r setup, include = F}
+rm(list = ls())
+
+library(knitr)
+hook_chunk <- knitr::knit_hooks$get('chunk')
+knit_hooks$set(chunk = function(x, options) {
+
+  # add latex commands if chunk option singlespacing is TRUE
+  if(isTRUE(options$singlespacing)){
+    return(sprintf("\\singlespacing\n %s \n\\doublespacing", hook_chunk(x, options)))
+  } else{
+    return(hook_chunk(x, options))
+  }
+})
+knitr::opts_chunk$set(
+  fig.align = "center",
+  tidy = T,
+  singlespacing = TRUE,
+  cache = TRUE,
+  fig.dim = c(10,8),
+  message = FALSE,
+  warning = FALSE,
+  comment = NA,
+  echo = F
+)
+
+# packages
+packs <- c("tidyverse", "rstan", "sf", "coda", "proxy", "daymetr", "prism", "stars", "raster", "exactextractr", "lubridate", "ggnewscale", "loo", "nimble")
+sapply(packs, require, character.only = T)
+rm(packs)
+options(tidyverse.quiet = TRUE)
+
+# convenience
+`%notin%` <- Negate("%in%")
+
+# stan settings
+options(mc.cores = parallel::detectCores() - 1)
+rstan_options(auto_write = TRUE)
+
+# data files from manuscript simulations
+sim1_dfs <- readRDS("data/sim1_dfs.rds")
+
+# functions
+nimble_summary <- function(fit, warmup = nrow(fit[[1]])/2, thin = 1){
+  # convert to coda for normal summary
+  fit_warmup <- lapply(fit, function(x) x[(warmup+1):nrow(x),])
+  coda_samples <- coda::as.mcmc.list(lapply(fit_warmup, function(x) as.mcmc(
+    x, start = warmup+1, end = nrow(fit), thin = thin
+  )))
+  
+  sum <- summary(coda_samples)
+  params <- dimnames(sum$statistics)[[1]]
+  tmp_sum <- cbind(sum$statistics, sum$quantiles)
+  
+  # get r hat / n_eff
+  mat <- matrix(NA, nrow = nrow(tmp_sum), ncol = 3)
+  colnames(mat) <- c("Rhat", "ess_bulk", "ess_tail")
+  for(i in 1:nrow(tmp_sum)){
+    tmp <- sapply(fit, function(x) x[,i])
+    mat[i,] <- c(Rhat(tmp), ess_bulk(tmp), ess_tail(tmp))
+  }
+  
+  # out 
+  out <- cbind(tmp_sum, mat)
+  return(out)
+}
+trace_plot <- function(samples, which = c("sigma"), nrow = 1){
+  niter <- dim(samples[[1]])[1]
+  nchains <- length(samples)
+  params <- colnames(samples[[1]])
+  nrow_ <- nrow
+  
+  combined_samples <- do.call("rbind", samples)
+  combined_samples <- combined_samples %>%
+    as_tibble %>%
+    mutate(iter = rep(1:niter, nchains), chain = factor(rep(1:nchains, each = niter))) %>%
+    dplyr::select(chain, iter, everything()) %>%
+    pivot_longer(cols = -c(1:2), names_to = "param", values_to = "trace")
+  
+  if(all(is.numeric(which))) which <- unique(combined_samples$param)[which]
+  
+  p <- combined_samples %>%
+    filter(param %in% which) %>%
+    ggplot() + 
+    geom_line(aes(x = iter, y = trace, col = chain, group = chain)) +
+    theme_bw() +
+    facet_wrap(~ param, scales = "free_y", nrow = nrow_)
+  
+  return(p)
+  
+}
+```
+
+# Introduction
+
+The purpose of this document is to showcase how N-mixture models [@royle2004] may be used with the NABat data pipeline to model colony counts and capture records. 
+
+# Model description
+
+## N-mixture model
+
+The following is a condensed description of the model discussed by @royle2004. Let $N_i$ denote the number of individuals _available for capture_ at site $i$ and $p_{ij}$ denote the probability of detecting an individual on visit $j$ to site $i$. Then,
+\[
+\begin{split}
+N_i &\sim \text{Poisson}(\lambda_i) \\
+y_{ij} &\sim \text{Binomial}(N_i, p_{ij})
+\end{split}
+\]
+Alternatively, a negative binomial sampling model can be placed on the the latent number of individuals available for capture. 
+\[
+\begin{split}
+N_i &\sim \text{Negative binomial}(\mu_i, \phi) \\
+y_{ij} &\sim \text{Binomial}(N_i, p_{ij})
+\end{split}
+\]
+
+## Zero-inflated N-mixture model
+
+In some cases, some sites may not be tenable for the target species. To account for the extra zeros induced by habitat insuitability, an occupancy layer can be added, resulting in a zero-inflated N-mixture model. 
+\[
+\begin{split}
+Z_i &\sim \text{Bernoulli}(\psi_i) \\
+N_i | z_i&\sim \text{Negative binomial}(z_i * \mu_i, \phi) \\
+y_{ij} | N_i &\sim \text{Binomial}(N_i, p_{ij})
+\end{split}
+\]
+
+# Simulated experiments
+
+```{r}
+# seed = 1
+# dat <- sim1_dfs$mt_covs_grid
+# visit_dat <- sim1_dfs$visit_covs
+# beta = rnorm(2)
+# alpha = rnorm(2)
+# delta = rnorm(2)
+# phi = abs(rnorm(1))
+# family = "negbin"
+# zif = TRUE
+# nsites = 75
+# nvisits = 8
+nmixture_sim <- function(seed = 1, dat, visit_dat, family = "negbin", zif = TRUE, nsites = 75, nvisits = 8, beta = rnorm(2), alpha = rnorm(2), delta = rnorm(2), phi = abs(rnorm(1))){
+  # set seed
+  set.seed(seed)
+  
+  # couple checks 
+  if(length(beta) > 8) stop("Only 8 covariates for Z are supported")
+  if(length(alpha) > 8) stop("Only 8 covariates for N are supported")
+  if(length(delta) > 6) stop("Only 6 covariates for y are supported")
+  
+  # occupancy first 
+  out <- dat %>% mutate(ndx = 1:n())
+  if(zif){
+    p_beta <- length(beta)
+    X <- dat %>%
+      as_tibble %>%
+      dplyr::select(mean_temp, precip, DEM_max, p_forest, dist_mines, physio_div, p_wetland) %>%
+      mutate_at(vars(mean_temp:p_wetland), ~c(scale(.x))) %>%
+      dplyr::select(1:(p_beta-1)) %>%
+      model.matrix(~., .)
+    out$xb <- c(X %*% beta)
+    out$psi <- with(out, exp(xb) / (1+exp(xb)))
+    out$z <- rbinom(nrow(out), 1, out$psi)
+  }
+  
+  # simulate counts first
+  if(zif){
+    if(family == "negbin"){
+      p_alpha <- length(alpha)
+      W <- dat %>%
+        as_tibble %>%
+        dplyr::select(mean_temp, precip, DEM_max, p_forest, dist_mines, physio_div, p_wetland) %>%
+        mutate_at(vars(mean_temp:p_wetland), ~c(scale(.x))) %>%
+        dplyr::select(1:(p_alpha-1)) %>%
+        model.matrix(~., .)
+      out$wa <- c(W %*% alpha)
+      out$N <- rnbinom(nrow(out), mu = out$z * exp(out$wa), size = phi)
+    } else{
+      p_alpha <- length(alpha)
+      W <- dat %>%
+        as_tibble %>%
+        dplyr::select(mean_temp, precip, DEM_max, p_forest, dist_mines, physio_div, p_wetland) %>%
+        mutate_at(vars(mean_temp:p_wetland), ~c(scale(.x))) %>%
+        dplyr::select(1:(p_alpha-1)) %>%
+        model.matrix(~., .)
+      out$wa <- c(W %*% alpha)
+      out$N <- rpois(nrow(out), out$z * exp(out$wa))
+    }
+  } else{
+    if(family == "negbin"){
+      p_alpha <- length(alpha)
+      W <- dat %>%
+        as_tibble %>%
+        dplyr::select(mean_temp, precip, DEM_max, p_forest, dist_mines, physio_div, p_wetland) %>%
+        mutate_at(vars(mean_temp:p_wetland), ~c(scale(.x))) %>%
+        dplyr::select(1:(p_alpha-1)) %>%
+        model.matrix(~., .)
+      out$wa <- c(W %*% alpha)
+      out$N <- rnbinom(nrow(out), mu = exp(out$wa), size = phi)
+    } else{
+      p_alpha <- length(alpha)
+      W <- dat %>%
+        as_tibble %>%
+        dplyr::select(mean_temp, precip, DEM_max, p_forest, dist_mines, physio_div, p_wetland) %>%
+        mutate_at(vars(mean_temp:p_wetland), ~c(scale(.x))) %>%
+        dplyr::select(1:(p_alpha-1)) %>%
+        model.matrix(~., .)
+      out$wa <- c(W %*% alpha)
+      out$N <- rpois(nrow(out), exp(out$wa))
+    }
+  }
+  
+  # detections
+  out2 <- visit_dat %>%
+    left_join(
+      ., 
+      out %>% dplyr::select(grts_id, N),
+      by = "grts_id"
+    ) %>%
+    mutate(ndx = 1:n())
+  p_delta <- length(delta)
+  V <- out2 %>%
+    as_tibble %>%
+    dplyr::select(tmean, ppt, tdmean, vpdmax, lunar_illum) %>%
+    mutate_at(vars(tmean:lunar_illum), ~c(scale(.x))) %>%
+    dplyr::select(1:(p_delta-1)) %>%
+    model.matrix(~., .)
+  out2$vd <- c(V %*% delta)
+  out2$p <- with(out2, exp(vd) / (1+exp(vd)))
+  out2$y <- rbinom(nrow(out2), size = out2$N, out2$p)
+  
+  # subset
+  site_df_obs <- out %>%
+    sample_n(nsites) %>% arrange(ndx) %>%
+    dplyr::select(ndx, everything())
+  visit_df_obs <- out2 %>%
+    filter(grts_id %in% site_df_obs$grts_id) %>%
+    group_by(grts_id) %>%
+    sample_n(nvisits) %>%
+    ungroup %>%
+    arrange(ndx)
+  
+  
+  # save
+  if(zif){
+    out3 <- list(
+      full_design = list(
+        X = X,
+        W = W,
+        V = V
+      ),
+      obs_design = list(
+        X = X[site_df_obs$ndx,],
+        W = W[site_df_obs$ndx,],
+        V = V[visit_df_obs$ndx,]
+      ),
+      site_df = out,
+      visit_df = out2,
+      site_df_obs = site_df_obs,
+      visit_df_obs = visit_df_obs,
+      params = list(
+        beta = beta, alpha = alpha, delta = delta, phi = phi
+      )
+    )
+  } else{
+    out3 <- list(
+      full_design = list(
+        W = W,
+        V = V
+      ),
+      obs_design = list(
+        W = W[site_df_obs$ndx,],
+        V = V[visit_df_obs$ndx,]
+      ),
+      site_df = out,
+      visit_df = out2,
+      site_df_obs = site_df_obs,
+      visit_df_obs = visit_df_obs,
+      params = list(
+        beta = beta, alpha = alpha, delta = delta, phi = phi
+      )
+    )
+  }
+  
+  return(out3)
+}
+```
+
+## Poisson N-mixture model
+
+```{r, eval = T, cache = F}
+pois_code <- nimbleCode({
+  # likelihood
+  for(site in 1:nsites){
+    log(lambda[site]) <- inprod(alpha[1:p_alpha], W[site, 1:p_alpha])
+    N[site] ~ dpois(lambda = lambda[site])
+  }
+  for(row in 1:nrows){
+    logit(p[row]) <- inprod(delta[1:p_delta], V[row, 1:p_delta])
+    y[row] ~ dbinom(prob = p[row], size = N[site_ndx[row]])
+  }
+
+  # priors
+  for(i in 1:p_alpha){
+    alpha[i] ~ dnorm(0, sd = 2)
+  }
+  for(i in 1:p_delta){
+    delta[i] ~ dnorm(0, sd = 2)
+  }
+})
+pois_code
+```
+
+### Simulated data
+
+```{r, eval = T, cache = F}
+# simulate data
+dat <- nmixture_sim(
+  seed = 01242023,
+  dat = sim1_dfs$mt_covs_grid,
+  visit_dat = sim1_dfs$visit_covs,
+  family = "poisson",
+  zif = FALSE,
+  nsites = 75, 
+  nvisits = 8
+)
+```
+
+```{r}
+ggplot() +
+  geom_sf(
+    data = dat$site_df, size = .1, fill = NA
+  ) +
+  geom_sf(
+    data = dat$site_df_obs, size = .1, aes(fill = log(N), col = log(N))
+  ) +
+  scale_color_gradientn(
+    colors = c("#a1d76a", "#e9a3c9") # PiYG palette
+  ) + 
+  scale_fill_gradientn(
+    colors = c("#a1d76a", "#e9a3c9") # PiYG palette
+  ) +
+  theme_bw()
+```
+
+### Fit model
+
+```{r, eval = F}
+# fit model
+fit <- nimbleMCMC(
+  code = pois_code,
+  data = list(
+    y = dat$visit_df_obs$y
+  ),
+  constants = list(
+    nsites = nrow(dat$site_df_obs),
+    nrows = nrow(dat$visit_df_obs),
+    W = dat$obs_design$W,
+    V = dat$obs_design$V,
+    p_alpha = length(dat$params$alpha),
+    p_delta = length(dat$params$delta),
+    site_ndx = dat$visit_df_obs$grts_id %>% 
+      as.factor %>% as.numeric
+  ),
+  monitors = c("alpha", "delta", "N", "p"),
+  niter = 10000,
+  nburnin = 500,
+  nchains = 3
+)
+saveRDS(fit, file = "fits/pois.rds")
+```
+
+### Diagnostics
+
+```{r}
+fit <- readRDS("fits/pois.rds")
+trace_plot(fit, c("alpha[1]", "alpha[2]", "delta[1]", "delta[2]"), nrow = 2)
+```
+
+### Posterior summaries
+
+```{r}
+tmp <- nimble_summary(fit)
+tbl1 <- tibble(
+  param = rownames(tmp),
+  mean = tmp[,1],
+  lwr = tmp[,5],
+  upr = tmp[,9],
+  rhat = tmp[,10],
+  neff_bulk = tmp[,11],
+  neff_tail = tmp[,12]
+) %>%
+  mutate(
+    truth = c(
+      dat$site_df_obs$N,
+      dat$params$alpha, dat$params$delta,
+      dat$visit_df_obs$p
+    )
+  ) %>%
+  mutate(
+    capture = factor(
+      ifelse(truth >= lwr & truth <= upr, 1, 0)
+    )
+  ) %>%
+  mutate(
+    mean_centered = mean-truth,
+    lwr_centered = lwr-truth,
+    upr_centered = upr-truth
+  )
+
+tbl1 %>%
+  filter(grepl("alpha", param) | grepl("delta", param)) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(y = param, xmin = lwr_centered, xmax = upr_centered, x = mean_centered, col = capture)
+  ) +
+  theme_bw() +
+  geom_vline(aes(xintercept = 0))
+
+tbl1 %>%
+  filter(grepl("N", param)) %>%
+  sample_n(15) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(y = param, xmin = lwr_centered, xmax = upr_centered, x = mean_centered, col = capture)
+  ) +
+  theme_bw() +
+  geom_vline(aes(xintercept = 0))
+
+tbl1 %>%
+  filter(grepl("p", param)) %>%
+  sample_n(20) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(y = param, xmin = lwr_centered, xmax = upr_centered, x = mean_centered, col = capture)
+  ) +
+  theme_bw() +
+  geom_vline(aes(xintercept = 0))
+```
+
+
