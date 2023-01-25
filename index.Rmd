@@ -451,4 +451,87 @@ tbl1 %>%
   geom_vline(aes(xintercept = 0))
 ```
 
+### Baby simulation study
+
+```{r, eval = F}
+run_sims <- function(nsims){
+  out <- list()
+  
+  pb <- txtProgressBar(min = 0, max = nsims, style = 3, width = 50, char = "=")  
+  for(sim in 1:nsims){
+    sim_ <- sim
+    
+    # simulate data
+    dat <- nmixture_sim(
+      seed = sim,
+      dat = sim1_dfs$mt_covs_grid,
+      visit_dat = sim1_dfs$visit_covs,
+      family = "poisson",
+      zif = FALSE,
+      nsites = 75, 
+      nvisits = 8
+    )
+    
+    # fit model
+    fit <- suppressMessages({nimbleMCMC(
+      code = pois_code,
+      data = list(
+        y = dat$visit_df_obs$y
+      ),
+      constants = list(
+        nsites = nrow(dat$site_df_obs),
+        nrows = nrow(dat$visit_df_obs),
+        W = dat$obs_design$W,
+        V = dat$obs_design$V,
+        p_alpha = length(dat$params$alpha),
+        p_delta = length(dat$params$delta),
+        site_ndx = dat$visit_df_obs$grts_id %>% 
+          as.factor %>% as.numeric
+      ),
+      monitors = c("alpha", "delta", "N", "p"),
+      niter = 10000,
+      nburnin = 500,
+      nchains = 3
+    )})
+    
+    # summarize
+    tmp <- nimble_summary(fit)
+    tbl1 <- tibble(
+      param = rownames(tmp),
+      mean = tmp[,1],
+      lwr = tmp[,5],
+      upr = tmp[,9],
+      rhat = tmp[,10],
+      neff_bulk = tmp[,11],
+      neff_tail = tmp[,12]
+    ) %>%
+      mutate(
+        truth = c(
+          dat$site_df_obs$N,
+          dat$params$alpha, dat$params$delta,
+          dat$visit_df_obs$p
+        )
+      ) %>%
+      mutate(
+        capture = factor(
+          ifelse(truth >= lwr & truth <= upr, 1, 0)
+        )
+      ) %>%
+      mutate(
+        mean_centered = mean-truth,
+        lwr_centered = lwr-truth,
+        upr_centered = upr-truth
+      ) %>%
+      mutate(sim = sim_)
+    out[[sim]] <- tbl1
+    setTxtProgressBar(pb, sim)
+  }
+  close(pb)
+  return(do.call("rbind", out))
+}
+pois_sims <- run_sims(10)
+saveRDS(pois_sims, "sims/sim1/pois_sims.rds")
+```
+
+
 
