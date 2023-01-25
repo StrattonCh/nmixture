@@ -136,7 +136,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["bibliography.bib","biometrics_notes.csl","data/sim1_dfs.rds","fits/pois.rds","index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-4-1.png","index_files/figure-html5/unnamed-chunk-6-1.png","index_files/figure-html5/unnamed-chunk-7-1.png","index_files/figure-html5/unnamed-chunk-7-2.png","index_files/figure-html5/unnamed-chunk-7-3.png","index_files/header-attrs-2.14/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js"]}
+  {"type":"character","attributes":{},"value":["bibliography.bib","biometrics_notes.csl","data/sim1_dfs.rds","fits/pois.rds","index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-4-1.png","index_files/figure-html5/unnamed-chunk-6-1.png","index_files/figure-html5/unnamed-chunk-7-1.png","index_files/figure-html5/unnamed-chunk-7-2.png","index_files/figure-html5/unnamed-chunk-7-3.png","index_files/figure-html5/unnamed-chunk-9-1.png","index_files/header-attrs-2.14/header-attrs.js","index_files/header-attrs-2.17/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","sims/sim1/pois_sims.rds"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -207,6 +207,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   d-article table.gt_table td,
   d-article table.gt_table th {
     border-bottom: none;
+    font-size: 100%;
   }
 
   .html-widget {
@@ -1279,15 +1280,21 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
       // hoverable references
       $('span.citation[data-cites]').each(function() {
-        if ($(this).children()[0].nodeName == "D-FOOTNOTE") {
-          var fn = $(this).children()[0]
+        const citeChild = $(this).children()[0]
+        // Do not process if @xyz has been used without escaping and without bibliography activated
+        // https://github.com/rstudio/distill/issues/466
+        if (citeChild === undefined) return true
+
+        if (citeChild.nodeName == "D-FOOTNOTE") {
+          var fn = citeChild
           $(this).html(fn.shadowRoot.querySelector("sup"))
           $(this).id = fn.id
           fn.remove()
         }
         var refs = $(this).attr('data-cites').split(" ");
         var refHtml = refs.map(function(ref) {
-          return "<p>" + $('#ref-' + ref).html() + "</p>";
+          // Could use CSS.escape too here, we insure backward compatibility in navigator
+          return "<p>" + $('div[id="ref-' + ref + '"]').html() + "</p>";
         }).join("\n");
         window.tippy(this, {
           allowHTML: true,
@@ -1486,7 +1493,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   </script>
 
   <!--/radix_placeholder_distill-->
-  <script src="index_files/header-attrs-2.14/header-attrs.js"></script>
+  <script src="index_files/header-attrs-2.17/header-attrs.js"></script>
   <script src="index_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
   <script src="index_files/popper-2.6.0/popper.min.js"></script>
   <link href="index_files/tippy-6.2.7/tippy.css" rel="stylesheet" />
@@ -1520,8 +1527,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h1>N-mixture models in NIMBLE</h1>
 <!--radix_placeholder_categories-->
 <!--/radix_placeholder_categories-->
-<p><p>Simulations investigating use of N-mixture models for NABat
-data</p></p>
+<p><p>Simulations investigating use of N-mixture models for NABat data</p></p>
 </div>
 
 
@@ -1531,67 +1537,46 @@ data</p></p>
 <h3>Contents</h3>
 <ul>
 <li><a href="#introduction" id="toc-introduction">Introduction</a></li>
-<li><a href="#model-description" id="toc-model-description">Model
-description</a>
+<li><a href="#model-description" id="toc-model-description">Model description</a>
 <ul>
-<li><a href="#n-mixture-model" id="toc-n-mixture-model">N-mixture
-model</a></li>
-<li><a href="#zero-inflated-n-mixture-model"
-id="toc-zero-inflated-n-mixture-model">Zero-inflated N-mixture
-model</a></li>
+<li><a href="#n-mixture-model" id="toc-n-mixture-model">N-mixture model</a></li>
+<li><a href="#zero-inflated-n-mixture-model" id="toc-zero-inflated-n-mixture-model">Zero-inflated N-mixture model</a></li>
 </ul></li>
-<li><a href="#simulated-experiments"
-id="toc-simulated-experiments">Simulated experiments</a>
+<li><a href="#simulated-experiments" id="toc-simulated-experiments">Simulated experiments</a>
 <ul>
-<li><a href="#poisson-n-mixture-model"
-id="toc-poisson-n-mixture-model">Poisson N-mixture model</a>
+<li><a href="#poisson-n-mixture-model" id="toc-poisson-n-mixture-model">Poisson N-mixture model</a>
 <ul>
-<li><a href="#simulated-data" id="toc-simulated-data">Simulated
-data</a></li>
+<li><a href="#simulated-data" id="toc-simulated-data">Simulated data</a></li>
 <li><a href="#fit-model" id="toc-fit-model">Fit model</a></li>
 <li><a href="#diagnostics" id="toc-diagnostics">Diagnostics</a></li>
-<li><a href="#posterior-summaries"
-id="toc-posterior-summaries">Posterior summaries</a></li>
+<li><a href="#posterior-summaries" id="toc-posterior-summaries">Posterior summaries</a></li>
+<li><a href="#baby-simulation-study" id="toc-baby-simulation-study">Baby simulation study</a></li>
 </ul></li>
 </ul></li>
 </ul>
 </nav>
 </div>
 <h1 id="introduction">Introduction</h1>
-<p>The purpose of this document is to showcase how N-mixture models
-<span class="citation" data-cites="royle2004">(<a href="#ref-royle2004"
-role="doc-biblioref">Royle, 2004</a>)</span> may be used with the NABat
-data pipeline to model colony counts and capture records.</p>
+<p>The purpose of this document is to showcase how N-mixture models <span class="citation" data-cites="royle2004">(<a href="#ref-royle2004" role="doc-biblioref">Royle, 2004</a>)</span> may be used with the NABat data pipeline to model colony counts and capture records.</p>
 <h1 id="model-description">Model description</h1>
 <h2 id="n-mixture-model">N-mixture model</h2>
-<p>The following is a condensed description of the model discussed by
-<span class="citation" data-cites="royle2004">Royle (<a
-href="#ref-royle2004" role="doc-biblioref">2004</a>)</span>. Let <span
-class="math inline">\(N_i\)</span> denote the number of individuals
-<em>available for capture</em> at site <span
-class="math inline">\(i\)</span> and <span
-class="math inline">\(p_{ij}\)</span> denote the probability of
-detecting an individual on visit <span class="math inline">\(j\)</span>
-to site <span class="math inline">\(i\)</span>. Then, <span
-class="math display">\[
+<p>The following is a condensed description of the model discussed by <span class="citation" data-cites="royle2004">Royle (<a href="#ref-royle2004" role="doc-biblioref">2004</a>)</span>. Let <span class="math inline">\(N_i\)</span> denote the number of individuals <em>available for capture</em> at site <span class="math inline">\(i\)</span> and <span class="math inline">\(p_{ij}\)</span> denote the probability of detecting an individual on visit <span class="math inline">\(j\)</span> to site <span class="math inline">\(i\)</span>. Then,
+<span class="math display">\[
 \begin{split}
 N_i &amp;\sim \text{Poisson}(\lambda_i) \\
 y_{ij} &amp;\sim \text{Binomial}(N_i, p_{ij})
 \end{split}
-\]</span> Alternatively, a negative binomial sampling model can be
-placed on the the latent number of individuals available for capture.
+\]</span>
+Alternatively, a negative binomial sampling model can be placed on the the latent number of individuals available for capture.
 <span class="math display">\[
 \begin{split}
 N_i &amp;\sim \text{Negative binomial}(\mu_i, \phi) \\
 y_{ij} &amp;\sim \text{Binomial}(N_i, p_{ij})
 \end{split}
 \]</span></p>
-<h2 id="zero-inflated-n-mixture-model">Zero-inflated N-mixture
-model</h2>
-<p>In some cases, some sites may not be tenable for the target species.
-To account for the extra zeros induced by habitat insuitability, an
-occupancy layer can be added, resulting in a zero-inflated N-mixture
-model. <span class="math display">\[
+<h2 id="zero-inflated-n-mixture-model">Zero-inflated N-mixture model</h2>
+<p>In some cases, some sites may not be tenable for the target species. To account for the extra zeros induced by habitat insuitability, an occupancy layer can be added, resulting in a zero-inflated N-mixture model.
+<span class="math display">\[
 \begin{split}
 Z_i &amp;\sim \text{Bernoulli}(\psi_i) \\
 N_i | z_i&amp;\sim \text{Negative binomial}(z_i * \mu_i, \phi) \\
@@ -1641,15 +1626,18 @@ y_{ij} | N_i &amp;\sim \text{Binomial}(N_i, p_{ij})
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="index_files/figure-html5/unnamed-chunk-7-1.png" width="960" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-7-2.png" width="960" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-7-3.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
-<div id="refs" class="references csl-bib-body hanging-indent"
-role="doc-bibliography">
+<h3 id="baby-simulation-study">Baby simulation study</h3>
+<p>Twenty simulated data sets with random generating values.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="index_files/figure-html5/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
 <div id="ref-royle2004" class="csl-entry" role="doc-biblioentry">
-Royle, J.A. (2004) <a
-href="https://doi.org/10.1111/j.0006-341X.2004.00142.x">N-mixture models
-for estimating population size from spatially replicated counts</a>.
-<em>Biometrics</em>, <strong>60</strong>, 108–115.
+Royle, J.A. (2004) <a href="https://doi.org/10.1111/j.0006-341X.2004.00142.x">N-mixture models for estimating population size from spatially replicated counts</a>. <em>Biometrics</em>, <strong>60</strong>, 108–115.
 </div>
 </div>
 <!--radix_placeholder_article_footer-->

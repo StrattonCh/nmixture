@@ -453,6 +453,8 @@ tbl1 %>%
 
 ### Baby simulation study
 
+Twenty simulated data sets with random generating values. 
+
 ```{r, eval = F}
 run_sims <- function(nsims){
   out <- list()
@@ -491,7 +493,8 @@ run_sims <- function(nsims){
       monitors = c("alpha", "delta", "N", "p"),
       niter = 10000,
       nburnin = 500,
-      nchains = 3
+      nchains = 3,
+      progressBar = F
     )})
     
     # summarize
@@ -529,9 +532,82 @@ run_sims <- function(nsims){
   close(pb)
   return(do.call("rbind", out))
 }
-pois_sims <- run_sims(10)
+pois_sims <- run_sims(20)
 saveRDS(pois_sims, "sims/sim1/pois_sims.rds")
 ```
 
+```{r}
+sim1 <- readRDS("sims/sim1/pois_sims.rds")
+
+# visuals
+plot_params <- c(
+  # unique(sim1$param[grepl("pd_prob", sim1$param)])
+  unique(sim1$param[grepl("alpha", sim1$param)]), unique(sim1$param[grepl("delta", sim1$param)])
+)
+
+ggplot() + 
+  geom_linerange(
+    data = sim1 %>%
+      mutate(
+        sim = factor(sim)
+      ) %>% 
+      filter(
+        param %in% plot_params
+      ),
+    aes(
+      y = param, x = mean_centered, 
+      xmin = lwr_centered, xmax = upr_centered
+    ),
+    position = position_dodge2(.5),
+    alpha = .2
+  ) +
+  geom_errorbar(
+    data = sim1 %>%
+      mutate(
+        sim = factor(sim)
+      ) %>%
+      filter(
+        param %in% plot_params
+      ) %>%
+      group_by(param) %>%
+      mutate(
+        capture = as.numeric(as.character(capture))
+      ) %>%
+      summarize(
+        mean_mean_centered = mean(mean_centered),
+        mean_lwr_centered = mean(lwr_centered),
+        mean_upr_centered = mean(upr_centered),
+        coverage = mean(capture)
+      ),
+    aes(
+      y = param, x = mean_mean_centered,
+      xmin = mean_lwr_centered,
+      xmax = mean_upr_centered,
+      col = coverage
+    ),
+    width = .5,
+    size = 1.1
+  ) +
+  theme_bw() +
+  geom_vline(
+    data = sim1 %>%
+      mutate(
+        sim = factor(sim)
+      ) %>% 
+      filter(
+        param %in% plot_params
+      ) %>%
+      dplyr::select(param) %>%
+      distinct() %>%
+      mutate(int = 0), 
+    aes(xintercept = int), 
+    linetype = "dotdash",
+    alpha = .5
+  ) +
+  scale_color_gradientn(
+    limits = c(0,1),
+    colors = c("#a1d76a", "#e9a3c9") # PiYG palette
+  )
+```
 
 
