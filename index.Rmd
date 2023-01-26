@@ -611,3 +611,321 @@ ggplot() +
 ```
 
 
+
+
+## Negative binomial N-mixture model
+
+```{r, eval = T, cache = F}
+negbin_code <- nimbleCode({
+  # likelihood
+  for(site in 1:nsites){
+    log(lambda[site]) <- inprod(alpha[1:p_alpha], W[site, 1:p_alpha])
+    nbp[site] <- phi / (phi + lambda[site])
+    N[site] ~ dnegbin(prob = nbp[site], size = phi)
+  }
+  for(row in 1:nrows){
+    logit(p[row]) <- inprod(delta[1:p_delta], V[row, 1:p_delta])
+    y[row] ~ dbinom(prob = p[row], size = N[site_ndx[row]])
+  }
+
+  # priors
+  for(i in 1:p_alpha){
+    alpha[i] ~ dnorm(0, sd = 2)
+  }
+  for(i in 1:p_delta){
+    delta[i] ~ dnorm(0, sd = 2)
+  }
+  phi ~ T(dnorm(0, 1), 0, Inf)
+})
+negbin_code
+```
+
+### Simulated data
+
+```{r, eval = T, cache = F}
+# simulate data
+dat <- nmixture_sim(
+  seed = 01242023,
+  dat = sim1_dfs$mt_covs_grid,
+  visit_dat = sim1_dfs$visit_covs,
+  family = "negbin",
+  zif = FALSE,
+  nsites = 75, 
+  nvisits = 8
+)
+```
+
+```{r}
+ggplot() +
+  geom_sf(
+    data = dat$site_df, size = .1, fill = NA
+  ) +
+  geom_sf(
+    data = dat$site_df_obs, size = .1, aes(fill = log(N), col = log(N))
+  ) +
+  scale_color_gradientn(
+    colors = c("#a1d76a", "#e9a3c9") # PiYG palette
+  ) + 
+  scale_fill_gradientn(
+    colors = c("#a1d76a", "#e9a3c9") # PiYG palette
+  ) +
+  theme_bw()
+```
+
+### Fit model
+
+```{r, eval = F}
+# fit model
+fit <- nimbleMCMC(
+  code = negbin_code,
+  data = list(
+    y = dat$visit_df_obs$y
+  ),
+  constants = list(
+    nsites = nrow(dat$site_df_obs),
+    nrows = nrow(dat$visit_df_obs),
+    W = dat$obs_design$W,
+    V = dat$obs_design$V,
+    p_alpha = length(dat$params$alpha),
+    p_delta = length(dat$params$delta),
+    site_ndx = dat$visit_df_obs$grts_id %>% 
+      as.factor %>% as.numeric
+  ),
+  monitors = c("alpha", "delta", "phi", "N", "p"),
+  niter = 20000,
+  nburnin = 10000,
+  nchains = 3
+)
+saveRDS(fit, file = "fits/negbin.rds")
+```
+
+### Diagnostics
+
+```{r}
+fit <- readRDS("fits/negbin.rds")
+trace_plot(fit, c("alpha[1]", "alpha[2]", "delta[1]", "delta[2]", "phi"), nrow = 2)
+```
+
+### Posterior summaries
+
+```{r}
+tmp <- nimble_summary(fit)
+tbl1 <- tibble(
+  param = rownames(tmp),
+  mean = tmp[,1],
+  lwr = tmp[,5],
+  upr = tmp[,9],
+  rhat = tmp[,10],
+  neff_bulk = tmp[,11],
+  neff_tail = tmp[,12]
+) %>%
+  mutate(
+    truth = c(
+      dat$site_df_obs$N,
+      dat$params$alpha, dat$params$delta,
+      dat$visit_df_obs$p,
+      dat$params$phi
+    )
+  ) %>%
+  mutate(
+    capture = factor(
+      ifelse(truth >= lwr & truth <= upr, 1, 0)
+    )
+  ) %>%
+  mutate(
+    mean_centered = mean-truth,
+    lwr_centered = lwr-truth,
+    upr_centered = upr-truth
+  )
+
+tbl1 %>%
+  filter(grepl("alpha", param) | grepl("delta", param) | grepl("phi", param)) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(y = param, xmin = lwr_centered, xmax = upr_centered, x = mean_centered, col = capture)
+  ) +
+  theme_bw() +
+  geom_vline(aes(xintercept = 0))
+
+tbl1 %>%
+  filter(grepl("N", param)) %>%
+  sample_n(15) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(y = param, xmin = lwr_centered, xmax = upr_centered, x = mean_centered, col = capture)
+  ) +
+  theme_bw() +
+  geom_vline(aes(xintercept = 0))
+
+tbl1 %>%
+  filter(grepl("p", param)) %>%
+  sample_n(20) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(y = param, xmin = lwr_centered, xmax = upr_centered, x = mean_centered, col = capture)
+  ) +
+  theme_bw() +
+  geom_vline(aes(xintercept = 0))
+```
+
+### Baby simulation study
+
+Twenty simulated data sets with random generating values. 
+
+```{r, eval = F}
+run_sims <- function(nsims){
+  out <- list()
+  
+  pb <- txtProgressBar(min = 0, max = nsims, style = 3, width = 50, char = "=")  
+  for(sim in 1:nsims){
+    sim_ <- sim
+    
+    # simulate data
+    dat <- nmixture_sim(
+      seed = sim,
+      dat = sim1_dfs$mt_covs_grid,
+      visit_dat = sim1_dfs$visit_covs,
+      family = "negbin",
+      zif = FALSE,
+      nsites = 75, 
+      nvisits = 8
+    )
+    
+    # fit model
+    fit <- suppressMessages({nimbleMCMC(
+      code = negbin_code,
+      data = list(
+        y = dat$visit_df_obs$y
+      ),
+      constants = list(
+        nsites = nrow(dat$site_df_obs),
+        nrows = nrow(dat$visit_df_obs),
+        W = dat$obs_design$W,
+        V = dat$obs_design$V,
+        p_alpha = length(dat$params$alpha),
+        p_delta = length(dat$params$delta),
+        site_ndx = dat$visit_df_obs$grts_id %>% 
+          as.factor %>% as.numeric
+      ),
+      monitors = c("alpha", "delta", "phi", "N", "p"),
+      niter = 10000,
+      nburnin = 500,
+      nchains = 3,
+      progressBar = F
+    )})
+    
+    # summarize
+    tmp <- nimble_summary(fit)
+    tbl1 <- tibble(
+      param = rownames(tmp),
+      mean = tmp[,1],
+      lwr = tmp[,5],
+      upr = tmp[,9],
+      rhat = tmp[,10],
+      neff_bulk = tmp[,11],
+      neff_tail = tmp[,12]
+    ) %>%
+      mutate(
+        truth = c(
+          dat$site_df_obs$N,
+          dat$params$alpha, dat$params$delta,
+          dat$visit_df_obs$p,
+          dat$params$phi
+        )
+      ) %>%
+      mutate(
+        capture = factor(
+          ifelse(truth >= lwr & truth <= upr, 1, 0)
+        )
+      ) %>%
+      mutate(
+        mean_centered = mean-truth,
+        lwr_centered = lwr-truth,
+        upr_centered = upr-truth
+      ) %>%
+      mutate(sim = sim_)
+    out[[sim]] <- tbl1
+    setTxtProgressBar(pb, sim)
+  }
+  close(pb)
+  return(do.call("rbind", out))
+}
+negbin_sims <- run_sims(20)
+saveRDS(negbin_sims, "sims/sim1/negbin_sims.rds")
+```
+
+```{r}
+sim1 <- readRDS("sims/sim1/negbin_sims.rds")
+
+# visuals
+plot_params <- c(
+  # unique(sim1$param[grepl("pd_prob", sim1$param)])
+  unique(sim1$param[grepl("alpha", sim1$param)]), unique(sim1$param[grepl("delta", sim1$param)]), "phi"
+)
+
+ggplot() + 
+  geom_linerange(
+    data = sim1 %>%
+      mutate(
+        sim = factor(sim)
+      ) %>% 
+      filter(
+        param %in% plot_params
+      ),
+    aes(
+      y = param, x = mean_centered, 
+      xmin = lwr_centered, xmax = upr_centered
+    ),
+    position = position_dodge2(.5),
+    alpha = .2
+  ) +
+  geom_errorbar(
+    data = sim1 %>%
+      mutate(
+        sim = factor(sim)
+      ) %>%
+      filter(
+        param %in% plot_params
+      ) %>%
+      group_by(param) %>%
+      mutate(
+        capture = as.numeric(as.character(capture))
+      ) %>%
+      summarize(
+        mean_mean_centered = mean(mean_centered),
+        mean_lwr_centered = mean(lwr_centered),
+        mean_upr_centered = mean(upr_centered),
+        coverage = mean(capture)
+      ),
+    aes(
+      y = param, x = mean_mean_centered,
+      xmin = mean_lwr_centered,
+      xmax = mean_upr_centered,
+      col = coverage
+    ),
+    width = .5,
+    size = 1.1
+  ) +
+  theme_bw() +
+  geom_vline(
+    data = sim1 %>%
+      mutate(
+        sim = factor(sim)
+      ) %>% 
+      filter(
+        param %in% plot_params
+      ) %>%
+      dplyr::select(param) %>%
+      distinct() %>%
+      mutate(int = 0), 
+    aes(xintercept = int), 
+    linetype = "dotdash",
+    alpha = .5
+  ) +
+  scale_color_gradientn(
+    limits = c(0,1),
+    colors = c("#a1d76a", "#e9a3c9") # PiYG palette
+  )
+```
+
+

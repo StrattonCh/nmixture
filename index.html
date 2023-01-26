@@ -136,7 +136,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["bibliography.bib","biometrics_notes.csl","data/sim1_dfs.rds","fits/pois.rds","index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-4-1.png","index_files/figure-html5/unnamed-chunk-6-1.png","index_files/figure-html5/unnamed-chunk-7-1.png","index_files/figure-html5/unnamed-chunk-7-2.png","index_files/figure-html5/unnamed-chunk-7-3.png","index_files/figure-html5/unnamed-chunk-9-1.png","index_files/header-attrs-2.14/header-attrs.js","index_files/header-attrs-2.17/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","sims/sim1/pois_sims.rds"]}
+  {"type":"character","attributes":{},"value":["bibliography.bib","biometrics_notes.csl","data/sim1_dfs.rds","fits/negbin.rds","fits/pois.rds","index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-12-1.png","index_files/figure-html5/unnamed-chunk-14-1.png","index_files/figure-html5/unnamed-chunk-15-1.png","index_files/figure-html5/unnamed-chunk-15-2.png","index_files/figure-html5/unnamed-chunk-15-3.png","index_files/figure-html5/unnamed-chunk-17-1.png","index_files/figure-html5/unnamed-chunk-4-1.png","index_files/figure-html5/unnamed-chunk-6-1.png","index_files/figure-html5/unnamed-chunk-7-1.png","index_files/figure-html5/unnamed-chunk-7-2.png","index_files/figure-html5/unnamed-chunk-7-3.png","index_files/figure-html5/unnamed-chunk-9-1.png","index_files/header-attrs-2.14/header-attrs.js","index_files/header-attrs-2.17/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","sims/sim1/negbin_sims.rds","sims/sim1/pois_sims.rds"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1552,6 +1552,14 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <li><a href="#posterior-summaries" id="toc-posterior-summaries">Posterior summaries</a></li>
 <li><a href="#baby-simulation-study" id="toc-baby-simulation-study">Baby simulation study</a></li>
 </ul></li>
+<li><a href="#negative-binomial-n-mixture-model" id="toc-negative-binomial-n-mixture-model">Negative binomial N-mixture model</a>
+<ul>
+<li><a href="#simulated-data-1" id="toc-simulated-data-1">Simulated data</a></li>
+<li><a href="#fit-model-1" id="toc-fit-model-1">Fit model</a></li>
+<li><a href="#diagnostics-1" id="toc-diagnostics-1">Diagnostics</a></li>
+<li><a href="#posterior-summaries-1" id="toc-posterior-summaries-1">Posterior summaries</a></li>
+<li><a href="#baby-simulation-study-1" id="toc-baby-simulation-study-1">Baby simulation study</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </nav>
@@ -1634,7 +1642,56 @@ y_{ij} | N_i &amp;\sim \text{Binomial}(N_i, p_{ij})
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="index_files/figure-html5/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<h2 id="negative-binomial-n-mixture-model">Negative binomial N-mixture model</h2>
+<div class="layout-chunk" data-layout="l-body">
+<pre><code>{
+    for (site in 1:nsites) {
+        log(lambda[site]) &lt;- inprod(alpha[1:p_alpha], W[site, 
+            1:p_alpha])
+        nbp[site] &lt;- phi/(phi + lambda[site])
+        N[site] ~ dnegbin(prob = nbp[site], size = phi)
+    }
+    for (row in 1:nrows) {
+        logit(p[row]) &lt;- inprod(delta[1:p_delta], V[row, 1:p_delta])
+        y[row] ~ dbinom(prob = p[row], size = N[site_ndx[row]])
+    }
+    for (i in 1:p_alpha) {
+        alpha[i] ~ dnorm(0, sd = 2)
+    }
+    for (i in 1:p_delta) {
+        delta[i] ~ dnorm(0, sd = 2)
+    }
+    phi ~ T(dnorm(0, 1), 0, Inf)
+}</code></pre>
+</div>
+<h3 id="simulated-data-1">Simulated data</h3>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="index_files/figure-html5/unnamed-chunk-12-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<h3 id="fit-model-1">Fit model</h3>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<h3 id="diagnostics-1">Diagnostics</h3>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="index_files/figure-html5/unnamed-chunk-14-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<h3 id="posterior-summaries-1">Posterior summaries</h3>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="index_files/figure-html5/unnamed-chunk-15-1.png" width="960" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-15-2.png" width="960" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-15-3.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<h3 id="baby-simulation-study-1">Baby simulation study</h3>
+<p>Twenty simulated data sets with random generating values.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><img src="index_files/figure-html5/unnamed-chunk-17-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
 <div id="ref-royle2004" class="csl-entry" role="doc-biblioentry">
 Royle, J.A. (2004) <a href="https://doi.org/10.1111/j.0006-341X.2004.00142.x">N-mixture models for estimating population size from spatially replicated counts</a>. <em>Biometrics</em>, <strong>60</strong>, 108–115.
