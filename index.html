@@ -136,7 +136,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["bibliography.bib","biometrics_notes.csl","data/sim1_dfs.rds","fits/negbin.rds","fits/pois.rds","index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-12-1.png","index_files/figure-html5/unnamed-chunk-14-1.png","index_files/figure-html5/unnamed-chunk-15-1.png","index_files/figure-html5/unnamed-chunk-15-2.png","index_files/figure-html5/unnamed-chunk-15-3.png","index_files/figure-html5/unnamed-chunk-17-1.png","index_files/figure-html5/unnamed-chunk-4-1.png","index_files/figure-html5/unnamed-chunk-6-1.png","index_files/figure-html5/unnamed-chunk-7-1.png","index_files/figure-html5/unnamed-chunk-7-2.png","index_files/figure-html5/unnamed-chunk-7-3.png","index_files/figure-html5/unnamed-chunk-9-1.png","index_files/header-attrs-2.14/header-attrs.js","index_files/header-attrs-2.17/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","sims/sim1/negbin_sims.rds","sims/sim1/pois_sims.rds"]}
+  {"type":"character","attributes":{},"value":["bibliography.bib","biometrics_notes.csl","data/NABat_Data_Export maternity sample for Stratton.csv","data/North Carolina/NABat_North Carolina_attributed.dbf","data/North Carolina/NABat_North Carolina_attributed.prj","data/North Carolina/NABat_North Carolina_attributed.shp","data/North Carolina/NABat_North Carolina_attributed.shx","data/sim1_dfs.rds","data/Tennessee/NABat_Tennessee_attributed.dbf","data/Tennessee/NABat_Tennessee_attributed.prj","data/Tennessee/NABat_Tennessee_attributed.shp","data/Tennessee/NABat_Tennessee_attributed.shx","fits/negbin.rds","fits/pois.rds","index.pdf","index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-12-1.png","index_files/figure-html5/unnamed-chunk-14-1.png","index_files/figure-html5/unnamed-chunk-15-1.png","index_files/figure-html5/unnamed-chunk-15-2.png","index_files/figure-html5/unnamed-chunk-15-3.png","index_files/figure-html5/unnamed-chunk-17-1.png","index_files/figure-html5/unnamed-chunk-19-1.png","index_files/figure-html5/unnamed-chunk-19-2.png","index_files/figure-html5/unnamed-chunk-20-1.png","index_files/figure-html5/unnamed-chunk-20-2.png","index_files/figure-html5/unnamed-chunk-20-3.png","index_files/figure-html5/unnamed-chunk-4-1.png","index_files/figure-html5/unnamed-chunk-6-1.png","index_files/figure-html5/unnamed-chunk-7-1.png","index_files/figure-html5/unnamed-chunk-7-2.png","index_files/figure-html5/unnamed-chunk-7-3.png","index_files/figure-html5/unnamed-chunk-9-1.png","index_files/figure-latex/unnamed-chunk-12-1.pdf","index_files/figure-latex/unnamed-chunk-14-1.pdf","index_files/figure-latex/unnamed-chunk-15-1.pdf","index_files/figure-latex/unnamed-chunk-15-2.pdf","index_files/figure-latex/unnamed-chunk-15-3.pdf","index_files/figure-latex/unnamed-chunk-17-1.pdf","index_files/figure-latex/unnamed-chunk-4-1.pdf","index_files/figure-latex/unnamed-chunk-6-1.pdf","index_files/figure-latex/unnamed-chunk-7-1.pdf","index_files/figure-latex/unnamed-chunk-7-2.pdf","index_files/figure-latex/unnamed-chunk-7-3.pdf","index_files/figure-latex/unnamed-chunk-9-1.pdf","index_files/header-attrs-2.14/header-attrs.js","index_files/header-attrs-2.17/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","sims/sim1/negbin_sims.rds","sims/sim1/pois_sims.rds"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -207,7 +207,6 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   d-article table.gt_table td,
   d-article table.gt_table th {
     border-bottom: none;
-    font-size: 100%;
   }
 
   .html-widget {
@@ -1280,21 +1279,15 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 
       // hoverable references
       $('span.citation[data-cites]').each(function() {
-        const citeChild = $(this).children()[0]
-        // Do not process if @xyz has been used without escaping and without bibliography activated
-        // https://github.com/rstudio/distill/issues/466
-        if (citeChild === undefined) return true
-
-        if (citeChild.nodeName == "D-FOOTNOTE") {
-          var fn = citeChild
+        if ($(this).children()[0].nodeName == "D-FOOTNOTE") {
+          var fn = $(this).children()[0]
           $(this).html(fn.shadowRoot.querySelector("sup"))
           $(this).id = fn.id
           fn.remove()
         }
         var refs = $(this).attr('data-cites').split(" ");
         var refHtml = refs.map(function(ref) {
-          // Could use CSS.escape too here, we insure backward compatibility in navigator
-          return "<p>" + $('div[id="ref-' + ref + '"]').html() + "</p>";
+          return "<p>" + $('#ref-' + ref).html() + "</p>";
         }).join("\n");
         window.tippy(this, {
           allowHTML: true,
@@ -1493,7 +1486,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   </script>
 
   <!--/radix_placeholder_distill-->
-  <script src="index_files/header-attrs-2.17/header-attrs.js"></script>
+  <script src="index_files/header-attrs-2.14/header-attrs.js"></script>
   <script src="index_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
   <script src="index_files/popper-2.6.0/popper.min.js"></script>
   <link href="index_files/tippy-6.2.7/tippy.css" rel="stylesheet" />
@@ -1527,7 +1520,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h1>N-mixture models in NIMBLE</h1>
 <!--radix_placeholder_categories-->
 <!--/radix_placeholder_categories-->
-<p><p>Simulations investigating use of N-mixture models for NABat data</p></p>
+<p><p>Simulations investigating use of N-mixture models for NABat
+data</p></p>
 </div>
 
 
@@ -1537,54 +1531,85 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h3>Contents</h3>
 <ul>
 <li><a href="#introduction" id="toc-introduction">Introduction</a></li>
-<li><a href="#model-description" id="toc-model-description">Model description</a>
+<li><a href="#model-description" id="toc-model-description">Model
+description</a>
 <ul>
-<li><a href="#n-mixture-model" id="toc-n-mixture-model">N-mixture model</a></li>
-<li><a href="#zero-inflated-n-mixture-model" id="toc-zero-inflated-n-mixture-model">Zero-inflated N-mixture model</a></li>
+<li><a href="#n-mixture-model" id="toc-n-mixture-model">N-mixture
+model</a></li>
+<li><a href="#zero-inflated-n-mixture-model"
+id="toc-zero-inflated-n-mixture-model">Zero-inflated N-mixture
+model</a></li>
 </ul></li>
-<li><a href="#simulated-experiments" id="toc-simulated-experiments">Simulated experiments</a>
+<li><a href="#simulated-experiments"
+id="toc-simulated-experiments">Simulated experiments</a>
 <ul>
-<li><a href="#poisson-n-mixture-model" id="toc-poisson-n-mixture-model">Poisson N-mixture model</a>
+<li><a href="#poisson-n-mixture-model"
+id="toc-poisson-n-mixture-model">Poisson N-mixture model</a>
 <ul>
-<li><a href="#simulated-data" id="toc-simulated-data">Simulated data</a></li>
+<li><a href="#simulated-data" id="toc-simulated-data">Simulated
+data</a></li>
 <li><a href="#fit-model" id="toc-fit-model">Fit model</a></li>
 <li><a href="#diagnostics" id="toc-diagnostics">Diagnostics</a></li>
-<li><a href="#posterior-summaries" id="toc-posterior-summaries">Posterior summaries</a></li>
-<li><a href="#baby-simulation-study" id="toc-baby-simulation-study">Baby simulation study</a></li>
+<li><a href="#posterior-summaries"
+id="toc-posterior-summaries">Posterior summaries</a></li>
+<li><a href="#baby-simulation-study" id="toc-baby-simulation-study">Baby
+simulation study</a></li>
 </ul></li>
-<li><a href="#negative-binomial-n-mixture-model" id="toc-negative-binomial-n-mixture-model">Negative binomial N-mixture model</a>
+<li><a href="#negative-binomial-n-mixture-model"
+id="toc-negative-binomial-n-mixture-model">Negative binomial N-mixture
+model</a>
 <ul>
-<li><a href="#simulated-data-1" id="toc-simulated-data-1">Simulated data</a></li>
+<li><a href="#simulated-data-1" id="toc-simulated-data-1">Simulated
+data</a></li>
 <li><a href="#fit-model-1" id="toc-fit-model-1">Fit model</a></li>
 <li><a href="#diagnostics-1" id="toc-diagnostics-1">Diagnostics</a></li>
-<li><a href="#posterior-summaries-1" id="toc-posterior-summaries-1">Posterior summaries</a></li>
-<li><a href="#baby-simulation-study-1" id="toc-baby-simulation-study-1">Baby simulation study</a></li>
+<li><a href="#posterior-summaries-1"
+id="toc-posterior-summaries-1">Posterior summaries</a></li>
+<li><a href="#baby-simulation-study-1"
+id="toc-baby-simulation-study-1">Baby simulation study</a></li>
 </ul></li>
 </ul></li>
+<li><a href="#internal-colony-count-data"
+id="toc-internal-colony-count-data">Internal colony count data</a></li>
 </ul>
 </nav>
 </div>
+<!-- \doublespacing -->
 <h1 id="introduction">Introduction</h1>
-<p>The purpose of this document is to showcase how N-mixture models <span class="citation" data-cites="royle2004">(<a href="#ref-royle2004" role="doc-biblioref">Royle, 2004</a>)</span> may be used with the NABat data pipeline to model colony counts and capture records.</p>
+<p>The purpose of this document is to showcase how N-mixture models
+<span class="citation" data-cites="royle2004">(<a href="#ref-royle2004"
+role="doc-biblioref">Royle, 2004</a>)</span> may be used with the NABat
+data pipeline to model colony counts and capture records.</p>
 <h1 id="model-description">Model description</h1>
 <h2 id="n-mixture-model">N-mixture model</h2>
-<p>The following is a condensed description of the model discussed by <span class="citation" data-cites="royle2004">Royle (<a href="#ref-royle2004" role="doc-biblioref">2004</a>)</span>. Let <span class="math inline">\(N_i\)</span> denote the number of individuals <em>available for capture</em> at site <span class="math inline">\(i\)</span> and <span class="math inline">\(p_{ij}\)</span> denote the probability of detecting an individual on visit <span class="math inline">\(j\)</span> to site <span class="math inline">\(i\)</span>. Then,
-<span class="math display">\[
+<p>The following is a condensed description of the model discussed by
+<span class="citation" data-cites="royle2004">Royle (<a
+href="#ref-royle2004" role="doc-biblioref">2004</a>)</span>. Let <span
+class="math inline">\(N_i\)</span> denote the number of individuals
+<em>available for capture</em> at site <span
+class="math inline">\(i\)</span> and <span
+class="math inline">\(p_{ij}\)</span> denote the probability of
+detecting an individual on visit <span class="math inline">\(j\)</span>
+to site <span class="math inline">\(i\)</span>. Then, <span
+class="math display">\[
 \begin{split}
 N_i &amp;\sim \text{Poisson}(\lambda_i) \\
 y_{ij} &amp;\sim \text{Binomial}(N_i, p_{ij})
 \end{split}
-\]</span>
-Alternatively, a negative binomial sampling model can be placed on the the latent number of individuals available for capture.
+\]</span> Alternatively, a negative binomial sampling model can be
+placed on the the latent number of individuals available for capture.
 <span class="math display">\[
 \begin{split}
 N_i &amp;\sim \text{Negative binomial}(\mu_i, \phi) \\
 y_{ij} &amp;\sim \text{Binomial}(N_i, p_{ij})
 \end{split}
 \]</span></p>
-<h2 id="zero-inflated-n-mixture-model">Zero-inflated N-mixture model</h2>
-<p>In some cases, some sites may not be tenable for the target species. To account for the extra zeros induced by habitat insuitability, an occupancy layer can be added, resulting in a zero-inflated N-mixture model.
-<span class="math display">\[
+<h2 id="zero-inflated-n-mixture-model">Zero-inflated N-mixture
+model</h2>
+<p>In some cases, some sites may not be tenable for the target species.
+To account for the extra zeros induced by habitat insuitability, an
+occupancy layer can be added, resulting in a zero-inflated N-mixture
+model. <span class="math display">\[
 \begin{split}
 Z_i &amp;\sim \text{Bernoulli}(\psi_i) \\
 N_i | z_i&amp;\sim \text{Negative binomial}(z_i * \mu_i, \phi) \\
@@ -1642,7 +1667,8 @@ y_{ij} | N_i &amp;\sim \text{Binomial}(N_i, p_{ij})
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="index_files/figure-html5/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
-<h2 id="negative-binomial-n-mixture-model">Negative binomial N-mixture model</h2>
+<h2 id="negative-binomial-n-mixture-model">Negative binomial N-mixture
+model</h2>
 <div class="layout-chunk" data-layout="l-body">
 <pre><code>{
     for (site in 1:nsites) {
@@ -1691,10 +1717,247 @@ y_{ij} | N_i &amp;\sim \text{Binomial}(N_i, p_{ij})
 <div class="layout-chunk" data-layout="l-body">
 <p><img src="index_files/figure-html5/unnamed-chunk-17-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
-<div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
+<h1 id="internal-colony-count-data">Internal colony count data</h1>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<pre><code># A tibble: 78 × 5
+# Groups:   location_name, year, grts_id [77]
+   location_name    year grts_id species_code  nrow
+   &lt;chr&gt;           &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;        &lt;int&gt;
+ 1 Pearson Cave     1994   28379 MYGR             1
+ 2 White Buis Cave  1994   50139 MYGR             1
+ 3 Bellamy Cave     1994   54971 MYGR             1
+ 4 Ament Cave       1994   56635 MYGR             1
+ 5 Bertie 1         1996  126157 CORA             1
+ 6 Rose Cave        2001   21051 MYGR             1
+ 7 Bellamy Cave     2005   54971 MYGR             1
+ 8 Rose Cave        2006   21051 MYGR             1
+ 9 Oaks Cave        2006   46907 MYGR             1
+10 White Buis Cave  2006   50139 MYGR             1
+11 Bellamy Cave     2006   54971 MYGR             1
+12 Rose Cave        2008   21051 MYGR             1
+13 Pearson Cave     2008   28379 MYGR             1
+14 Lost Creek Cave  2008   46907 MYGR             1
+15 Oaks Cave        2008   46907 MYGR             1
+16 Bellamy Cave     2008   54971 MYGR             1
+17 Rose Cave        2009   21051 MYGR             1
+18 Pearson Cave     2009   28379 MYGR             1
+19 Oaks Cave        2009   46907 MYGR             1
+20 White Buis Cave  2009   50139 MYGR             1
+21 Bellamy Cave     2009   54971 MYGR             1
+22 Ament Cave       2009   56635 MYGR             1
+23 Rose Cave        2010   21051 MYGR             1
+24 Pearson Cave     2010   28379 MYGR             1
+25 Oaks Cave        2010   46907 MYGR             1
+26 White Buis Cave  2010   50139 MYGR             1
+27 Bellamy Cave     2010   54971 MYGR             1
+28 Ament Cave       2010   56635 MYGR             1
+29 Haywood 2        2010   61419 CORA             1
+30 Rose Cave        2011   21051 MYGR             1
+31 Pearson Cave     2011   28379 MYGR             1
+32 Oaks Cave        2011   46907 MYGR             1
+33 White Buis Cave  2011   50139 MYGR             1
+34 Bellamy Cave     2011   54971 MYGR             1
+35 Ament Cave       2011   56635 MYGR             1
+36 Haywood 2        2011   61419 CORA             1
+37 Rose Cave        2012   21051 MYGR             1
+38 Pearson Cave     2012   28379 MYGR             1
+39 Oaks Cave        2012   46907 MYGR             1
+40 White Buis Cave  2012   50139 MYGR             1
+41 Bellamy Cave     2012   54971 MYGR             1
+42 Ament Cave       2012   56635 MYGR             1
+43 Haywood 2        2012   61419 CORA             1
+44 Haywood 3        2012   61419 CORA             2
+45 Graham 1         2013   14907 MYLE            13
+46 Haywood 2        2013   61419 CORA             1
+47 Haywood 3        2013   61419 CORA             1
+48 Graham 1         2014   14907 MYLE             3
+49 Bellamy Cave     2014   54971 MYGR             1
+50 Haywood 2        2014   61419 CORA             1
+51 Haywood 3        2014   61419 CORA             1
+52 Graham 1         2015   14907 MYLE             4
+53 Bellamy Cave     2015   54971 MYGR             1
+54 Haywood 2        2015   61419 CORA             1
+55 Haywood 3        2015   61419 CORA             1
+56 Graham 1         2016   14907 MYLE            11
+57 Bellamy Cave     2016   54971 MYGR             1
+58 Haywood 2        2016   61419 CORA             2
+59 Haywood 3        2016   61419 CORA             1
+60 Graham 1         2017   14907 MYLE             4
+61 Pearson Cave     2017   28379 MYGR             1
+62 Oaks Cave        2017   46907 MYGR             1
+63 Bellamy Cave     2017   54971 MYGR             1
+64 Haywood 2        2017   61419 CORA             2
+65 Haywood 3        2017   61419 CORA             2
+66 Rattling Cave    2017  101591 MYGR             1
+67 Graham 1         2018   14907 MYLE             3
+68 Pearson Cave     2018   28379 MYGR             1
+69 Oaks Cave        2018   46907 MYGR             1
+70 Haywood 2        2018   61419 CORA             2
+71 Haywood 3        2018   61419 CORA             1
+72 Rattling Cave    2018  101591 MYGR             1
+73 Graham 1         2019   14907 MYLE             3
+74 Pearson Cave     2019   28379 MYGR             1
+75 Bellamy Cave     2019   54971 MYGR             1
+76 Haywood 2        2019   61419 CORA             1
+77 Haywood 3        2019   61419 CORA             1
+78 Haywood 3        2019   61419 EPFU             1</code></pre>
+<p><img src="index_files/figure-html5/unnamed-chunk-19-1.png" width="768" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-19-2.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<pre><code># A tibble: 134 × 4
+# Groups:   location_name, year [131]
+    location_name   year grts_id  nrow
+    &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;
+  1 Brunswick 1     1994   63788     1
+  2 Bertie 1        1996  126157     1
+  3 Robeson 1       2000   48107     1
+  4 Robeson 2       2000   71609     2
+  5 Davidson 1      2001   75171     1
+  6 Swain 1         2002   97254     1
+  7 Avery 1         2003   58300     1
+  8 Swain 1         2003  106686     3
+  9 Avery 1         2004   58300     2
+ 10 Duplin 1        2005   69054     1
+ 11 Swain 2         2005  106686     1
+ 12 Avery 1         2006   58300     7
+ 13 Macon 2         2006   80031     1
+ 14 Bladen 2        2006  130109     1
+ 15 Haywood 1       2007   12267     1
+ 16 Bladen 1        2007   28204     2
+ 17 Avery 1         2007   58300     4
+ 18 Bladen 3        2007  130109     1
+ 19 Avery 1         2008   58300     4
+ 20 Rutherford 1    2008   63916     1
+ 21 Jackson 2       2008   90481     1
+ 22 Avery 1         2009   58300     8
+ 23 Clay 1          2009   92051     1
+ 24 Haywood 4       2010    8939     1
+ 25 Durham 1        2010   10412     1
+ 26 Macon 1         2010   41596     1
+ 27 Swain 2         2010   44779     5
+ 28 Jackson 1       2010   48875     1
+ 29 Avery 1         2010   58300     4
+ 30 Haywood 2       2010   61419     1
+ 31 Macon 1         2010   80031     1
+ 32 Macon 3         2010   88393     2
+ 33 Swain 1         2010  106686     6
+ 34 Haywood 4       2011    8939     1
+ 35 Durham 1        2011   10412     1
+ 36 Swain 2         2011   44779     1
+ 37 Haywood 2       2011   61419     1
+ 38 Jackson 1       2011   65259     1
+ 39 Swain 1         2011  106686     3
+ 40 Haywood 4       2012    8939     3
+ 41 Haywood 5       2012    8939     2
+ 42 Swain 2         2012   44779     9
+ 43 Transylvania 1  2012   44779     1
+ 44 Avery 1         2012   58300     4
+ 45 Haywood 2       2012   61419     1
+ 46 Haywood 3       2012   61419     2
+ 47 Jackson 1       2012   65259     2
+ 48 Macon 1         2012   80031     2
+ 49 Swain 1         2012  106686    11
+ 50 Haywood 4       2013    8939     1
+ 51 Graham 1        2013   14907    13
+ 52 Buncombe 1      2013   15339     1
+ 53 Swain 2         2013   44779     4
+ 54 Madison 6       2013   48107     3
+ 55 Avery 1         2013   58300     2
+ 56 Haywood 2       2013   61419     1
+ 57 Haywood 3       2013   61419     1
+ 58 Jackson 1       2013   65259     2
+ 59 Macon 1         2013   80031     1
+ 60 Swain 1         2013  106686     5
+ 61 Haywood 4       2014    8939     3
+ 62 Graham 1        2014   14907     3
+ 63 Swain 2         2014   44779     6
+ 64 Avery 1         2014   58300     2
+ 65 Haywood 2       2014   61419     1
+ 66 Haywood 3       2014   61419     1
+ 67 Jackson 1       2014   65259     2
+ 68 Macon 1         2014   80031     1
+ 69 Beafort 1       2014   97662     1
+ 70 Swain 1         2014  106686     8
+ 71 Haywood 4       2015    8939     2
+ 72 Graham 1        2015   14907     4
+ 73 Swain 2         2015   44779     7
+ 74 Avery 1         2015   58300     2
+ 75 Haywood 2       2015   61419     1
+ 76 Haywood 3       2015   61419     1
+ 77 Jackson 1       2015   65259     1
+ 78 Macon 1         2015   80031     3
+ 79 Swain 1         2015  106686    12
+ 80 Haywood 4       2016    8939     1
+ 81 Graham 1        2016   14907    11
+ 82 Buncombe 1      2016   15339    27
+ 83 Swain 2         2016   44779    10
+ 84 Madison 1       2016   48107     2
+ 85 Madison 4       2016   48107     2
+ 86 Avery 1         2016   58300     2
+ 87 Haywood 2       2016   61419     2
+ 88 Haywood 3       2016   61419     1
+ 89 Macon 1         2016   80031     1
+ 90 Madison 4       2016   81727     1
+ 91 Madison 1       2016   88393     1
+ 92 Johnston 1      2016   90481     1
+ 93 Swain 1         2016  106686    11
+ 94 Haywood 4       2017    8939     1
+ 95 Haywood 1       2017   12267     1
+ 96 Graham 1        2017   14907     4
+ 97 Buncombe 1      2017   15339    12
+ 98 Bladen 1        2017   28204     2
+ 99 Madison 2       2017   40939     2
+100 Swain 2         2017   44779     8
+101 Madison 1       2017   48107    13
+102 Madison 4       2017   48107     4
+103 Madison 5       2017   48107    13
+104 Jackson 1       2017   59115     1
+105 Haywood 2       2017   61419     2
+106 Haywood 3       2017   61419     2
+107 Macon 1         2017   80031     1
+108 Madison 3       2017   81727     6
+109 Swain 1         2017  106686     9
+110 Haywood 4       2018    8939     1
+111 Haywood 6       2018   13035     2
+112 Graham 1        2018   14907     3
+113 Swain 2         2018   44779     8
+114 Haywood 2       2018   61419     2
+115 Haywood 3       2018   61419     1
+116 Jackson 1       2018   65259     1
+117 Cherokee 1      2018   77415     3
+118 Macon 1         2018   80031     1
+119 Swain 1         2018  106686     8
+120 Haywood 4       2019    8939     1
+121 Graham 1        2019   14907     3
+122 Swain 2         2019   44779     9
+123 Haywood 2       2019   61419     1
+124 Haywood 3       2019   61419     2
+125 Jackson 1       2019   65259     1
+126 Macon 1         2019   80031     1
+127 Swain 1         2019  106686     9
+128 Yancey 2        2019  112019     1
+129 Haywood 4       2020    8939     1
+130 Haywood 5       2020    8939     2
+131 Jackson 1       2020   65259     1
+132 Macon 1         2020   80031     1
+133 Clay 1          2020   92051     1
+134 Swain 1         2020  106686     3</code></pre>
+<p><img src="index_files/figure-html5/unnamed-chunk-20-1.png" width="768" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-20-2.png" width="768" style="display: block; margin: auto;" /><img src="index_files/figure-html5/unnamed-chunk-20-3.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<!-- \newpage -->
+<!-- # References -->
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div id="refs" class="references csl-bib-body hanging-indent"
+role="doc-bibliography">
 <div id="ref-royle2004" class="csl-entry" role="doc-biblioentry">
-Royle, J.A. (2004) <a href="https://doi.org/10.1111/j.0006-341X.2004.00142.x">N-mixture models for estimating population size from spatially replicated counts</a>. <em>Biometrics</em>, <strong>60</strong>, 108–115.
+Royle, J.A. (2004) <a
+href="https://doi.org/10.1111/j.0006-341X.2004.00142.x">N-mixture models
+for estimating population size from spatially replicated counts</a>.
+<em>Biometrics</em>, <strong>60</strong>, 108–115.
 </div>
 </div>
 <!--radix_placeholder_article_footer-->

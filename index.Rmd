@@ -7,9 +7,15 @@ output:
     self_contained: false
     toc: true
     toc_depth: 3
+# output:
+#   pdf_document
+# header-includes:
+#   - \usepackage{setspace}
 bibliography: bibliography.bib
 csl: biometrics_notes.csl
 ---
+
+<!-- \doublespacing -->
 
 ```{r setup, include = F}
 rm(list = ls())
@@ -928,4 +934,138 @@ ggplot() +
   )
 ```
 
+# Internal colony count data
 
+```{r}
+internal <- readr::read_csv("data/NABat_Data_Export maternity sample for Stratton.csv") %>%
+  dplyr::select(-grts_id) %>%
+  rename(grts_id = grts_cell_id)
+nc_shp <- read_sf("data/North Carolina")
+ten_shp <- read_sf("data/Tennessee")
+```
+
+```{r, fig.dim = c(8, 10)}
+ten_internal <- internal %>%
+  filter(
+    grts_id %in% ten_shp$GRTS_ID
+  ) %>%
+  dplyr::select(-geometry) %>%
+  left_join(
+    ., 
+    ten_shp %>% dplyr::select(grts_id = GRTS_ID, geometry),
+    by = "grts_id"
+  )
+
+ten_internal %>%
+  group_by(location_name, year, grts_id, species_code) %>%
+  summarize(nrow = n())  %>%
+  arrange(year, grts_id, location_name) %>%
+  print(n= "all")
+  
+ten_internal %>%
+  group_by(grts_id, species_code, year) %>%
+  summarize(total_max_count = sum(max_count), geometry = geometry) %>%
+  distinct %>%
+  filter(year > 2005) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(
+    aes(fill = log(total_max_count), col = log(total_max_count)), size = 1.1 
+  ) + 
+  facet_grid(year ~ species_code) +
+  theme_bw() +
+  labs(
+    title = "Sum of max counts across visits in TEN"
+  )
+
+ten_internal %>%
+  group_by(grts_id, species_code, year) %>%
+  summarize(visits = n(), geometry = geometry) %>%
+  distinct %>%
+  mutate(visits_ = factor(visits, levels = c(1:4, 11, 13))) %>%
+  filter(year > 2005) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(
+    aes(fill = visits_, col = visits_), size = 1.1 
+  ) + 
+  facet_grid(year ~ species_code) +
+  theme_bw()+
+  labs(
+    title = "Number of visits to GRTS cells in TEN"
+  )
+```
+
+```{r, fig.dim = c(8, 10)}
+nc_internal <- internal %>%
+  filter(
+    grts_id %in% nc_shp$GRTS_ID
+  ) %>%
+  dplyr::select(-geometry) %>%
+  left_join(
+    ., 
+    nc_shp %>% dplyr::select(grts_id = GRTS_ID, geometry),
+    by = "grts_id"
+  )
+
+nc_internal %>%
+  group_by(location_name, year, grts_id) %>%
+  summarize(nrow = n())  %>%
+  arrange(year, grts_id, location_name) %>%
+  print(n= "all")  
+
+nc_internal %>%
+  group_by(grts_id, species_code, year) %>%
+  summarize(total_max_count = sum(max_count), geometry = geometry) %>%
+  distinct %>%
+  filter(year > 2009) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(
+    aes(fill = log(total_max_count), col = log(total_max_count)), size = 1.1 
+  ) + 
+  facet_grid(year ~ species_code) +
+  theme_bw()+
+  labs(
+    title = "Sum of max counts across visits in NC"
+  )
+
+nc_internal %>%
+  group_by(grts_id, species_code, year) %>%
+  summarize(visits = n(), geometry = geometry) %>%
+  distinct %>%
+  mutate(visits_ = factor(visits, levels = c(1:7, 10:11, 13, 19))) %>%
+  filter(year > 2009) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(
+    aes(fill = visits_, col = visits_), size = 1.1 
+  ) + 
+  facet_grid(year ~ species_code) +
+  theme_bw()+
+  labs(
+    title = "Total number of visits to GRTS cells in NC"
+  )
+
+nc_internal %>%
+  group_by(grts_id, species_code, year) %>%
+  summarize(visits = n(), geometry = geometry) %>%
+  distinct %>%
+  filter(species_code == "MYLU") %>%
+  mutate(visits_ = factor(visits, levels = c(1:7, 10:11, 13, 19))) %>%
+  filter(year > 2009) %>%
+  st_as_sf() %>%
+  ggplot() +
+  geom_sf(
+    aes(fill = visits_, col = visits_), size = 1.1 
+  ) + 
+  facet_wrap(~ year) +
+  theme_bw()+
+  labs(
+    title = "Total number of visits to GRTS cells in NC",
+    subtitle = "MYLU"
+  )
+```
+
+<!-- \newpage -->
+<!-- # References -->
